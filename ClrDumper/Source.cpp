@@ -4,8 +4,15 @@
 
 void main(int argc, char* argv[])
 {
-	char pefile[] = "C:\\Users\\user\\source\\repos\\ClrDumper\\Debug\\TestInjection.exe";
-	char dll[] = "C:\\Users\\user\\source\\repos\\ClrDumper\\Debug\\HookClr.dll";
+	char* pefile;// = "C:\\Users\\user\\source\\repos\\ClrDumper\\Debug\\TestInjection.exe";
+	char* dll;// = "C:\\Users\\user\\source\\repos\\ClrDumper\\Debug\\HookClr.dll";
+	if (argc < 3)
+	{
+		printf("ClrDumper.exe [FULL_PATH_TO_EXE] [FULL_PATH_TO_HOOKCLR_DLL]");
+		return;
+	}
+	pefile = argv[1];
+	dll = argv[2];
 
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
