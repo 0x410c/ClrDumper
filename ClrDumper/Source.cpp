@@ -2,19 +2,110 @@
 #include<stdio.h>
 #include<Psapi.h>
 #include<shlwapi.h>
+#include "NamedPipeIO.h"
+#include <string>
+#include<unordered_map>
+
+using namespace std;
 
 #define FILE_MAPPING_NAME L"Dumper_Arg"
 #define FILE_MAPPING_SIZE 256
 
 #pragma comment(lib,"Shlwapi.lib")
 
+#define NATIVE_CLR_ARG 1
+#define ASM_LOAD_ARG 2
+
+HANDLE _reader_pipe;
+HANDLE _writer_pipe;
+
+
+unordered_map<string, string> _stringKeyMap;
+unordered_map<string, int> _intKeyMap;
+
+void InitNamedPipe()
+{
+	_writer_pipe = CreateNamedPipeA(
+		READER_PIPE_NAME, // name of the pipe
+		PIPE_ACCESS_OUTBOUND, // 1-way pipe -- send only
+		PIPE_TYPE_BYTE, // send data as a byte stream
+		1, // only allow 1 instance of this pipe
+		0, // no outbound buffer
+		0, // no inbound buffer
+		0, // use default wait time
+		NULL // use default security attributes
+	);
+	_reader_pipe = CreateNamedPipeA(
+		WRITER_PIPE_NAME, // name of the pipe
+		PIPE_ACCESS_INBOUND, // 1-way pipe -- send only
+		PIPE_TYPE_BYTE, // send data as a byte stream
+		1, // only allow 1 instance of this pipe
+		0, // no outbound buffer
+		0, // no inbound buffer
+		0, // use default wait time
+		NULL // use default security attributes
+	);
+}
+
+void WaitForConnection()
+{
+	ConnectNamedPipe(_writer_pipe, NULL);
+	ConnectNamedPipe(_reader_pipe, NULL);
+}
+
+void DeInitNamedPipe()
+{
+	CloseHandle(_reader_pipe);
+	CloseHandle(_writer_pipe);
+}
+
+//blocks untill client closes
+DWORD NamedPipeLoop(LPVOID lpParameter)
+{
+	DWORD n;
+	char buffer[MAX_BUFFER];
+	while (true)
+	{
+		ReadFile(_reader_pipe, buffer, MAX_BUFFER, &n, NULL);
+		if (n <= 0)
+			break;
+		int type;
+		char msg[MAX_BUFFER];
+		sscanf(buffer, "%d%256[^\n]", &type, msg);
+		switch (type)
+		{
+		case GET_KEY_STRING:
+		{
+			const char* strVal = _stringKeyMap[msg].c_str();
+			WriteFile(_writer_pipe, strVal, lstrlenA(strVal) + 1, &n, NULL);
+			break;
+		}
+		case GET_KEY_INT:
+		{
+			int intVal = _intKeyMap[msg];
+			WriteFile(_writer_pipe, &intVal, 4, &n, NULL);
+			break;
+		}
+		case LOG_MSG:
+			printf("%s\n", msg);
+			break;
+		default:
+			break;
+		}
+	}
+	return 0;
+}
+
+
 void main(int argc, char* argv[])
 {
 	char* pefile;// = "C:\\Users\\user\\source\\repos\\ClrDumper\\Debug\\TestInjection.exe";
 	char dll[256];
 	
-	StrCpyA(dll, argv[0]);
+	lstrcpyA(dll, argv[0]);
 	PathRemoveFileSpecA(dll);
+	_stringKeyMap[DUMP_PATH] = dll;
+
 	lstrcatA(dll,"\\HookClr.dll");
 	if (argc < 3)
 	{
@@ -22,13 +113,24 @@ void main(int argc, char* argv[])
 		return;
 	}
 	pefile = argv[2];
-
-	if ((lstrcmpA(argv[1], "-asmload") != 0) &&
-		(lstrcmpA(argv[1], "-nativeclr") != 0))
+	if (lstrcmpA(argv[1], "-asmload") == 0)
+	{
+		_intKeyMap[HOOK_TYPE] = ASM_LOAD_ARG;
+	}
+	else if(lstrcmpA(argv[1], "-nativeclr") == 0)
+	{
+		_intKeyMap[HOOK_TYPE] = NATIVE_CLR_ARG;
+	}
+	else
 	{
 		printf("[-] Invalid arguments");
 		return;
 	}
+
+	
+
+	//intialize named pipe
+	InitNamedPipe();
 
 
 	STARTUPINFOA si;
@@ -36,7 +138,12 @@ void main(int argc, char* argv[])
 	memset(&si, 0, sizeof(si));
 	memset(&pi, 0, sizeof(pi));
 	si.cb = sizeof(si);
-	if (CreateProcessA(pefile, NULL, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, NULL, &si, &pi) == FALSE) {
+
+	//pass the current directory to the process, where the target exe is
+	char targetDir[256];
+	lstrcpyA(targetDir, pefile);
+	PathRemoveFileSpecA(targetDir);
+	if (CreateProcessA(pefile, NULL, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, targetDir, &si, &pi) == FALSE) {
 		printf("[-] Cant Create Process! Exiting!\n");
 		return;
 	}
@@ -76,13 +183,33 @@ void main(int argc, char* argv[])
 		loadLib = (unsigned char*)GetProcAddress((HMODULE)kernel32, "LoadLibraryA");
 
 		HANDLE threadHandle = CreateRemoteThread(pi.hProcess, 0, 0, (LPTHREAD_START_ROUTINE)loadLib, lpAddress, 0, 0);
+		
+		WaitForConnection();
+		
+		HANDLE hThread = CreateThread(
+			NULL,    // Thread attributes
+			0,       // Stack size (0 = use default)
+			(LPTHREAD_START_ROUTINE)NamedPipeLoop, // Thread start address
+			NULL,    // Parameter to pass to the thread
+			0,       // Creation flags
+			NULL);   // Thread id
+		if (hThread == NULL)
+		{
+			printf("[-] Can't Create Thread, Exiting!\n");
+			return;
+		}
+		
+		
+		
 		if (WaitForSingleObjectEx(threadHandle, 60000, 0) == WAIT_TIMEOUT)
 			printf("[-] Remote thread timed out!\n");
 		ResumeThread(pi.hThread);
-		Sleep(500000);
+		
+		WaitForSingleObject(hThread, INFINITE);
+		CloseHandle(hThread);
 	}
 	else
 		printf("[-] Cannot allocate memory in target process!");
 
-    TerminateProcess(pi.hProcess, 0);
+    //TerminateProcess(pi.hProcess, 0);
 }
