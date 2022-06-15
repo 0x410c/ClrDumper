@@ -35,7 +35,7 @@ namespace AssemblyLoad {
         char path[MAX_PATH];
         lstrcpyA(path, _dumpPath);
 
-        char* dumpName = GetDumpName();
+        char* dumpName = GetDumpName("ASM_LOAD");
         lstrcatA(path, dumpName);
 
         HANDLE hFile = CreateFileA(path,
@@ -46,9 +46,11 @@ namespace AssemblyLoad {
             for (int i = 0; i < length; i++)
                 WriteFile(hFile, &(((unsigned char*)buffer)[i]), 1, &dwBytesRead, NULL);
             CloseHandle(hFile);
-
+            Log("[+] Dumped Assembly to %s", path);
         }
-        Log("[+] Dumped Assembly to %s", path);
+        else
+            Log("[-] Could not create dump file!");
+       
         ExitProcess(0);
         return S_OK;
     }

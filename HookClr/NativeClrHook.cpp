@@ -27,7 +27,7 @@ namespace NativeClr {
         char path[MAX_PATH];
         lstrcpyA(path, _dumpPath);
 
-        char* dumpName = GetDumpName();
+        char* dumpName = GetDumpName("NATIVE_CLR");
         lstrcatA(path, dumpName);
 
 
@@ -41,9 +41,11 @@ namespace NativeClr {
             for (int i = 0; i < psa->rgsabound->cElements; i++)
                 WriteFile(hFile, &data[i], 1, &dwBytesRead, NULL);
             CloseHandle(hFile);
-
+            Log("[+] Dumped Assembly to %s", path);
         }
-        Log("[+] Dumped Assembly to %s", path);
+        else
+            Log("[-] Could not create dump file!");
+        
         Sleep(10000);
         ExitProcess(0);
         return unaccess(psa);
@@ -51,6 +53,7 @@ namespace NativeClr {
 
     void HookForNativeClr(char* dumpPath)
     {
+        lstrcpyA(_dumpPath, dumpPath);
         if (MH_CreateHook(&SafeArrayUnaccessData, &HookedUnAccess,
             reinterpret_cast<LPVOID*>(&unaccess)) != MH_OK)
         {

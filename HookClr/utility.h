@@ -1,3 +1,3 @@
 #include <Windows.h>
 
-char* GetDumpName();
+char* GetDumpName(const char* tag);

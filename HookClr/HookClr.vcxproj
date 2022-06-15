@@ -145,17 +145,23 @@
   <ItemGroup>
     <ClCompile Include="AssemblyLoadHook.cpp" />
     <ClCompile Include="DllLoadCallback.cpp" />
+    <ClCompile Include="kmp.cpp" />
+    <ClCompile Include="MemoryUtils.cpp" />
     <ClCompile Include="NamedPipeIO.cpp" />
     <ClCompile Include="NativeClrHook.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="utility.cpp" />
+    <ClCompile Include="VBScriptHook.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblyLoadHook.h" />
     <ClInclude Include="DllLoadCallback.h" />
+    <ClInclude Include="kmp.h" />
+    <ClInclude Include="MemoryUtils.h" />
     <ClInclude Include="NamedPipeIO.h" />
     <ClInclude Include="NativeClrHook.h" />
     <ClInclude Include="utility.h" />
+    <ClInclude Include="VBScript.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

@@ -1,20 +1,31 @@
 # ClrDumper
-ClrDumper can dump .net assemblies from :
+ClrDumper can dump .net assemblies and scripts from :
 
-1) Native Clr Loaders
-2) Managed Assembly (in memory loading Assembly.Load(bytes[]))
+- Native Clr Loaders
+- Managed Assembly (in memory loading Assembly.Load(bytes[]))
+- vbs execution (for now direct execution)
+
+ClrDumper can also dump scripts at every stage, like eval or Execute
+for now vbscript is supported, jscript and powershell is coming soon
 
 For Native loaders
-use as:
+```
 ClrDumper.exe -nativeclr [PATH_TO_EXE]
+```
 
 For Managed Assemblies
-use as:
+```
 ClrDumper.exe -asmload [PATH_TO_EXE]
+```
+
+For VbScript
+```
+ClrDumper.exe -vbscript [PATH_TO_VBS]
+```
 
 ClrDumper injects HookClr.dll into the processes, please ensure the dll is in the same directory
 as ClrDumper.exe
 
 Bypasses all debugger checks, obfuscation!
 
-NOTE: THIS PROGRAM WILL RUN YOUR EXE TO EXTRACT THE ASSEMBLY, USE AT YOUR OWN RISK
+NOTE: THIS PROGRAM WILL RUN YOUR TARGER TO EXTRACT THE ASSEMBLY, USE AT YOUR OWN RISK

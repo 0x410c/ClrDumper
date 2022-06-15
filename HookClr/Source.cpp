@@ -3,6 +3,7 @@
 #include "AssemblyLoadHook.h"
 #include "NativeClrHook.h"
 #include "NamedPipeIO.h"
+#include "VBScript.h"
 
 
 #pragma comment(lib,"Shlwapi.lib")
@@ -12,6 +13,9 @@
 
 #define NATIVE_CLR_ARG 1
 #define ASM_LOAD_ARG 2
+#define VBSCRIPT_ARG 3
+#define JSCRIPT_ARG 4
+#define RUNPE_ARG 5
 
 int _hookType=-1;
 
@@ -59,6 +63,9 @@ void UnhookFunctions()
     case ASM_LOAD_ARG:
         AssemblyLoad::UnhookForAssemblyLoad();
         break;
+    case VBSCRIPT_ARG:
+        VBScript::UnhookForVBScript();
+        break;
     default:
         break;
     }
@@ -75,17 +82,22 @@ void HookFunctions()
     
     if (MH_Initialize() != MH_OK)
     {
-        Log("Hook Engine Failed!")
-        //MessageBoxW(NULL, L"cant initialize hook", L"MinHook Sample", MB_OK);
+        Log("[-] Hook Engine Failed!");
     }
-    Log("[+] Hooking for Assembly Load!");
+    
     switch (_hookType)
     {
     case NATIVE_CLR_ARG:
+        Log("[+] Hooking for Native CLR!");
         NativeClr::HookForNativeClr(dumpPath);
         break;
     case ASM_LOAD_ARG:
+        Log("[+] Hooking for Assembly Load!");
         AssemblyLoad::HookForAssemblyLoad(dumpPath);
+        break;
+    case VBSCRIPT_ARG:
+        Log("[+] Hooking for VBScript!");
+        VBScript::HookForVBScript(dumpPath);
         break;
     default:
         break;

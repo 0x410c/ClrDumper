@@ -15,6 +15,9 @@ using namespace std;
 
 #define NATIVE_CLR_ARG 1
 #define ASM_LOAD_ARG 2
+#define VBSCRIPT_ARG 3
+#define JSCRIPT_ARG 4
+#define RUNPE_ARG 5
 
 HANDLE _reader_pipe;
 HANDLE _writer_pipe;
@@ -99,8 +102,9 @@ DWORD NamedPipeLoop(LPVOID lpParameter)
 
 void main(int argc, char* argv[])
 {
-	char* pefile;// = "C:\\Users\\user\\source\\repos\\ClrDumper\\Debug\\TestInjection.exe";
-	char dll[256];
+	char pefile[MAX_PATH];// = "C:\\Users\\user\\source\\repos\\ClrDumper\\Debug\\TestInjection.exe";
+	char dll[MAX_PATH];
+	char script_path[MAX_PATH];
 	
 	lstrcpyA(dll, argv[0]);
 	PathRemoveFileSpecA(dll);
@@ -109,10 +113,10 @@ void main(int argc, char* argv[])
 	lstrcatA(dll,"\\HookClr.dll");
 	if (argc < 3)
 	{
-		printf("ClrDumper.exe [-nativeclr|-asmload] [FULL_PATH_TO_EXE]");
+		printf("ClrDumper.exe [-nativeclr|-asmload|-vbscript] [FULL_PATH_TO_EXE|FULL_PATH_TO_VBS]");
 		return;
 	}
-	pefile = argv[2];
+	lstrcpyA(pefile, argv[2]);
 	if (lstrcmpA(argv[1], "-asmload") == 0)
 	{
 		_intKeyMap[HOOK_TYPE] = ASM_LOAD_ARG;
@@ -120,6 +124,16 @@ void main(int argc, char* argv[])
 	else if(lstrcmpA(argv[1], "-nativeclr") == 0)
 	{
 		_intKeyMap[HOOK_TYPE] = NATIVE_CLR_ARG;
+	}
+	else if (lstrcmpA(argv[1], "-vbscript") == 0)
+	{
+		char buff[MAX_PATH];
+		GetSystemDirectoryA(buff, MAX_PATH);
+		lstrcatA(buff, "\\wscript.exe");
+		lstrcpyA(pefile, buff);
+		sprintf(script_path,"%s %s",pefile, argv[2]);
+		
+		_intKeyMap[HOOK_TYPE] = VBSCRIPT_ARG;
 	}
 	else
 	{
@@ -143,9 +157,21 @@ void main(int argc, char* argv[])
 	char targetDir[256];
 	lstrcpyA(targetDir, pefile);
 	PathRemoveFileSpecA(targetDir);
-	if (CreateProcessA(pefile, NULL, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, targetDir, &si, &pi) == FALSE) {
-		printf("[-] Cant Create Process! Exiting!\n");
-		return;
+
+	//if we are dumping scripts the process needs path of the script
+	if (_intKeyMap[HOOK_TYPE] == VBSCRIPT_ARG || _intKeyMap[HOOK_TYPE] == JSCRIPT_ARG)
+	{
+		if (CreateProcessA(pefile, script_path, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, targetDir, &si, &pi) == FALSE) {
+			printf("[-] Cant Create Process! Exiting!\n");
+			return;
+		}
+	}
+	else
+	{
+		if (CreateProcessA(pefile, NULL, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, targetDir, &si, &pi) == FALSE) {
+			printf("[-] Cant Create Process! Exiting!\n");
+			return;
+		}
 	}
 
 	//not needed for now
