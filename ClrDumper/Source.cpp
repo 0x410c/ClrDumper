@@ -105,6 +105,7 @@ void main(int argc, char* argv[])
 	char pefile[MAX_PATH];// = "C:\\Users\\user\\source\\repos\\ClrDumper\\Debug\\TestInjection.exe";
 	char dll[MAX_PATH];
 	char script_path[MAX_PATH];
+	bool isScript = false;
 	
 	lstrcpyA(dll, argv[0]);
 	PathRemoveFileSpecA(dll);
@@ -127,28 +128,28 @@ void main(int argc, char* argv[])
 	}
 	else if (lstrcmpA(argv[1], "-vbscript") == 0)
 	{
-		char buff[MAX_PATH];
-		GetSystemDirectoryA(buff, MAX_PATH);
-		lstrcatA(buff, "\\wscript.exe");
-		lstrcpyA(pefile, buff);
-		sprintf(script_path,"%s %s",pefile, argv[2]);
-		
 		_intKeyMap[HOOK_TYPE] = VBSCRIPT_ARG;
 	}
 	else if (lstrcmpA(argv[1], "-jscript") == 0)
 	{
-		char buff[MAX_PATH];
-		GetSystemDirectoryA(buff, MAX_PATH);
-		lstrcatA(buff, "\\wscript.exe");
-		lstrcpyA(pefile, buff);
-		sprintf(script_path, "%s %s", pefile, argv[2]);
-
 		_intKeyMap[HOOK_TYPE] = JSCRIPT_ARG;
 	}
 	else
 	{
 		printf("[-] Invalid arguments");
 		return;
+	}
+
+	//if script is given then run with wscript.exe else, run the exec as it is
+	char* ext = CharLowerA(& pefile[lstrlenA(pefile) - 4]);
+	if ((_intKeyMap[HOOK_TYPE] == VBSCRIPT_ARG || _intKeyMap[HOOK_TYPE] == JSCRIPT_ARG) && lstrcmpA(ext,".exe"))
+	{
+		isScript = true;
+		char buff[MAX_PATH];
+		GetSystemDirectoryA(buff, MAX_PATH);
+		lstrcatA(buff, "\\wscript.exe");
+		lstrcpyA(pefile, buff);
+		sprintf(script_path, "%s %s", pefile, argv[2]);
 	}
 
 	
@@ -169,7 +170,7 @@ void main(int argc, char* argv[])
 	PathRemoveFileSpecA(targetDir);
 
 	//if we are dumping scripts the process needs path of the script
-	if (_intKeyMap[HOOK_TYPE] == VBSCRIPT_ARG || _intKeyMap[HOOK_TYPE] == JSCRIPT_ARG)
+	if (isScript)
 	{
 		if (CreateProcessA(pefile, script_path, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, targetDir, &si, &pi) == FALSE) {
 			printf("[-] Cant Create Process! Exiting!\n");
