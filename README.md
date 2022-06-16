@@ -3,10 +3,10 @@ ClrDumper can dump .net assemblies and scripts from :
 
 - Native Clr Loaders
 - Managed Assembly (in memory loading Assembly.Load(bytes[]))
-- vbs execution (for now direct execution)
+- vbs/js hosting executables
+- vbscript or jscript
 
 ClrDumper can also dump scripts at every stage, like eval or Execute
-for now vbscript is supported, jscript and powershell is coming soon
 
 For Native loaders
 ```
