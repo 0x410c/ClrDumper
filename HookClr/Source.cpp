@@ -4,6 +4,7 @@
 #include "NativeClrHook.h"
 #include "NamedPipeIO.h"
 #include "VBScript.h"
+#include "JScriptHook.h"
 
 
 #pragma comment(lib,"Shlwapi.lib")
@@ -66,6 +67,9 @@ void UnhookFunctions()
     case VBSCRIPT_ARG:
         VBScript::UnhookForVBScript();
         break;
+    case JSCRIPT_ARG:
+        JScript::UnhookForJScript();
+        break;
     default:
         break;
     }
@@ -98,6 +102,10 @@ void HookFunctions()
     case VBSCRIPT_ARG:
         Log("[+] Hooking for VBScript!");
         VBScript::HookForVBScript(dumpPath);
+        break;
+    case JSCRIPT_ARG:
+        Log("[+] Hooking for JScript!");
+        JScript::HookForJScript(dumpPath);
         break;
     default:
         break;

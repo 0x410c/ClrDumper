@@ -113,7 +113,7 @@ void main(int argc, char* argv[])
 	lstrcatA(dll,"\\HookClr.dll");
 	if (argc < 3)
 	{
-		printf("ClrDumper.exe [-nativeclr|-asmload|-vbscript] [FULL_PATH_TO_EXE|FULL_PATH_TO_VBS]");
+		printf("ClrDumper.exe [-nativeclr|-asmload|-vbscript|-jscript] [FULL_PATH_TO_EXE|FULL_PATH_TO_VBS|FULL_PATH_TO_JS]");
 		return;
 	}
 	lstrcpyA(pefile, argv[2]);
@@ -134,6 +134,16 @@ void main(int argc, char* argv[])
 		sprintf(script_path,"%s %s",pefile, argv[2]);
 		
 		_intKeyMap[HOOK_TYPE] = VBSCRIPT_ARG;
+	}
+	else if (lstrcmpA(argv[1], "-jscript") == 0)
+	{
+		char buff[MAX_PATH];
+		GetSystemDirectoryA(buff, MAX_PATH);
+		lstrcatA(buff, "\\wscript.exe");
+		lstrcpyA(pefile, buff);
+		sprintf(script_path, "%s %s", pefile, argv[2]);
+
+		_intKeyMap[HOOK_TYPE] = JSCRIPT_ARG;
 	}
 	else
 	{

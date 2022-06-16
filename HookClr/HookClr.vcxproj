@@ -145,6 +145,7 @@
   <ItemGroup>
     <ClCompile Include="AssemblyLoadHook.cpp" />
     <ClCompile Include="DllLoadCallback.cpp" />
+    <ClCompile Include="JScriptHook.cpp" />
     <ClCompile Include="kmp.cpp" />
     <ClCompile Include="MemoryUtils.cpp" />
     <ClCompile Include="NamedPipeIO.cpp" />
@@ -156,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="AssemblyLoadHook.h" />
     <ClInclude Include="DllLoadCallback.h" />
+    <ClInclude Include="JScriptHook.h" />
     <ClInclude Include="kmp.h" />
     <ClInclude Include="MemoryUtils.h" />
     <ClInclude Include="NamedPipeIO.h" />

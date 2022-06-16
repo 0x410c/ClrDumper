@@ -4,9 +4,14 @@
 #include "NamedPipeIO.h"
 #include "kmp.h"
 
-unsigned int FindData(unsigned char* address, int address_len, unsigned char* needle, int needle_len)
+//generic search
+unsigned int FindData(unsigned char* address, int address_len, unsigned char* needle, int needle_len, bool wildcard=false)
 {
-	int index = KMPSearch((unsigned char*)needle, needle_len, (unsigned char*)address, address_len);
+	int index = -1;
+	if (wildcard)
+		index = KMPSearchWild((unsigned char*)needle, needle_len, (unsigned char*)address, address_len);
+	else
+		index = KMPSearch((unsigned char*)needle, needle_len, (unsigned char*)address, address_len);
 	if (index == -1)
 		return index;
 	return (unsigned int)address + index;
@@ -17,6 +22,7 @@ unsigned int FindStringInDLL(void* dllBase,const char* needle)
 	return FindDataInDLL(dllBase, (unsigned char*)needle, lstrlenA(needle));
 }
 
+//searchs in dll sections
 unsigned int FindDataInDLL(void* dllBase, unsigned char* needle, int needle_size)
 {
 	int index = -1;
@@ -31,7 +37,6 @@ unsigned int FindDataInDLL(void* dllBase, unsigned char* needle, int needle_size
 		char section_name[9];
 		memcpy(section_name, sectionHeader[i].Name, 8);
 		section_name[8] = 0;
-		Log("section_name : %s", section_name);
 		unsigned int section_address = (unsigned int)dllBase + sectionHeader[i].VirtualAddress;
 		int section_size = sectionHeader[i].Misc.VirtualSize;
 

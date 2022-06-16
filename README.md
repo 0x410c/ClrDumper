@@ -23,6 +23,11 @@ For VbScript
 ClrDumper.exe -vbscript [PATH_TO_VBS]
 ```
 
+For JScript
+```
+ClrDumper.exe -jscript [PATH_TO_JS]
+```
+
 ClrDumper injects HookClr.dll into the processes, please ensure the dll is in the same directory
 as ClrDumper.exe
 

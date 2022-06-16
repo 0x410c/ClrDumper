@@ -8,6 +8,9 @@
 namespace VBScript {
 
 	char _dumpPath[MAX_PATH];
+	//confirmed from vbscript.dll version 5.812.10586.494(modified 2016) till 5.812.10240.16384 (modified 2022)
+	unsigned char pattern_COleScript_Compile[8] = { 0xFF,0x75,0xFC,0xFF,0x75,0x08,0x50,0xE8 };
+	unsigned int _compileAddress = 0;
 
 
 	void UnhookForVBScript()
@@ -48,23 +51,20 @@ namespace VBScript {
 		return originalCompile(thiz, a,b,c,d,e,f,g,h,i);
 	}
 
-	//confirmed from vbscript.dll version 5.812.10586.494(modified 2016) till 5.812.10240.16384 (modified 2022)
-	unsigned char pattern_COleScript_Compile[8] = { 0xFF,0x75,0xFC,0xFF,0x75,0x08,0x50,0xE8 };
-
 	void HookVbScript(void* vbBase)
 	{
 
 		unsigned int index = FindDataInDLL(vbBase, pattern_COleScript_Compile, 8);
-		unsigned int address = *(unsigned int*)((unsigned char*)index + 8) + (index+7+5);		//its a relative address 
+		unsigned int _compileAddress = *(unsigned int*)((unsigned char*)index + 8) + (index+7+5);		//its a relative address 
 		
 		MH_STATUS st;
-		if ((st = MH_CreateHook((LPVOID)address, &compileHooked,
+		if ((st = MH_CreateHook((LPVOID)_compileAddress, &compileHooked,
 			reinterpret_cast<LPVOID*>(&originalCompile))) != MH_OK)
 		{
 			Log("[-] Cannot Create Hook! %s", MH_StatusToString(st));
 			return;
 		}
-		if (MH_EnableHook((LPVOID)address) != MH_OK)
+		if (MH_EnableHook((LPVOID)_compileAddress) != MH_OK)
 		{
 			Log("[-] Cannot Enable Hook!");
 			return;
