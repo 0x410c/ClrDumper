@@ -60,7 +60,7 @@ namespace NativeClr {
             Log("[-] Cannot Create SafeArrayUnaccessData Hook!\n");
             return;
         }
-
+        
         if (MH_EnableHook(&SafeArrayUnaccessData) != MH_OK)
         {
             Log("[-] Cannot enable SafeArrayUnaccessData Hook!\n");

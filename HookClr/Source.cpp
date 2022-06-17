@@ -9,7 +9,7 @@
 
 #pragma comment(lib,"Shlwapi.lib")
 
-#define FILE_MAPPING_NAME L"Dumper_Arg"
+#define FILE_MAPPING_NAME "Dumper_Arg"
 #define FILE_MAPPING_SIZE 256
 
 #define NATIVE_CLR_ARG 1

@@ -5,10 +5,11 @@
 #include "NamedPipeIO.h"
 #include <string>
 #include<unordered_map>
+#include <tlhelp32.h>
 
 using namespace std;
 
-#define FILE_MAPPING_NAME L"Dumper_Arg"
+#define FILE_MAPPING_NAME "Dumper_Arg"
 #define FILE_MAPPING_SIZE 256
 
 #pragma comment(lib,"Shlwapi.lib")
@@ -99,6 +100,29 @@ DWORD NamedPipeLoop(LPVOID lpParameter)
 	return 0;
 }
 
+HANDLE GetProcessHandle(const char* process_name)
+{
+	PROCESSENTRY32 entry;
+	HANDLE hProcess = INVALID_HANDLE_VALUE;
+	entry.dwSize = sizeof(PROCESSENTRY32);
+
+	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+
+	if (Process32First(snapshot, &entry) == TRUE)
+	{
+		while (Process32Next(snapshot, &entry) == TRUE)
+		{
+			if (lstrcmpA(entry.szExeFile, process_name) == 0)
+			{
+				hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, entry.th32ProcessID);
+			}
+		}
+	}
+
+	CloseHandle(snapshot);
+	return hProcess;
+}
+
 
 void main(int argc, char* argv[])
 {
@@ -157,32 +181,37 @@ void main(int argc, char* argv[])
 	//intialize named pipe
 	InitNamedPipe();
 
-
-	STARTUPINFOA si;
-	PROCESS_INFORMATION pi;
-	memset(&si, 0, sizeof(si));
-	memset(&pi, 0, sizeof(pi));
-	si.cb = sizeof(si);
-
 	//pass the current directory to the process, where the target exe is
 	char targetDir[256];
 	lstrcpyA(targetDir, pefile);
 	PathRemoveFileSpecA(targetDir);
 
 	//if we are dumping scripts the process needs path of the script
-	if (isScript)
+	STARTUPINFOA si;
+	PROCESS_INFORMATION pi;
+	memset(&si, 0, sizeof(si));
+	memset(&pi, 0, sizeof(pi));
+	si.cb = sizeof(si);
+	STARTUPINFOEXA siex = { sizeof(siex) };
+
+	SIZE_T cbAttributeListSize;
+	PPROC_THREAD_ATTRIBUTE_LIST pAttributeList = nullptr;
+	InitializeProcThreadAttributeList(NULL,1,NULL,&cbAttributeListSize);
+	pAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), 0, cbAttributeListSize);
+	InitializeProcThreadAttributeList(pAttributeList, 1, 0, &cbAttributeListSize);
+	const char* spoofProcess = "explorer.exe";
+	HANDLE spoofProcessHandle = GetProcessHandle(spoofProcess);
+	if (spoofProcessHandle == INVALID_HANDLE_VALUE)
 	{
-		if (CreateProcessA(pefile, script_path, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, targetDir, &si, &pi) == FALSE) {
-			printf("[-] Cant Create Process! Exiting!\n");
-			return;
-		}
+		printf("[+] Cant open process %s to spoof", spoofProcess);
+		return;
 	}
-	else
-	{
-		if (CreateProcessA(pefile, NULL, NULL, NULL, FALSE, CREATE_SUSPENDED, NULL, targetDir, &si, &pi) == FALSE) {
-			printf("[-] Cant Create Process! Exiting!\n");
-			return;
-		}
+	UpdateProcThreadAttribute(pAttributeList, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &spoofProcessHandle, sizeof(HANDLE), NULL, NULL);
+	siex.lpAttributeList = pAttributeList;
+
+	if (CreateProcessA(pefile, isScript?script_path:NULL, NULL, NULL, FALSE, CREATE_SUSPENDED| EXTENDED_STARTUPINFO_PRESENT, NULL, targetDir, &siex.StartupInfo, &pi) == FALSE) {
+		printf("[-] Cant Create Process! Exiting!\n");
+		return;
 	}
 
 	//not needed for now
@@ -203,7 +232,7 @@ void main(int argc, char* argv[])
 
 	//create file mapping to pass arguments to the injected dll
 	HANDLE  shmem = INVALID_HANDLE_VALUE;
-	shmem = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, FILE_MAPPING_SIZE, FILE_MAPPING_NAME);
+	shmem = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, FILE_MAPPING_SIZE, FILE_MAPPING_NAME);
 	char* buf = (char*)MapViewOfFile(shmem, FILE_MAP_ALL_ACCESS, 0, 0, FILE_MAPPING_SIZE);
 	lstrcpyA(buf, argv[1]);
 
