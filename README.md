@@ -34,10 +34,11 @@ For Powershell
 ClrDumper.exe -powershell [PATH_TO_JS]
 ```
 
-For Executables which host vbscript/jscript
+For Executables which host vbscript/jscript/powershell
 ```
 ClrDumper.exe -jscript [PATH_TO_EXE]
 ClrDumper.exe -vbscript [PATH_TO_EXE]
+ClrDumper.exe -powershell [PATH_TO_EXE]
 ```
 
 ClrDumper injects HookClr.dll into the processes, please ensure the dll is in the same directory
