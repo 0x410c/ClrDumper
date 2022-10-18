@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\JitHeader">
+      <UniqueIdentifier>{4bd78da8-0e64-4264-b1ed-124a2bf9d341}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\JitHeader\net6">
+      <UniqueIdentifier>{3f12d259-4ce2-442e-a026-bf091b183efb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -45,6 +51,9 @@
     <ClCompile Include="JScriptHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PowershellHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblyLoadHook.h">
@@ -73,6 +82,24 @@
     </ClInclude>
     <ClInclude Include="JScriptHook.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PowershellHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="corjit.h">
+      <Filter>Header Files\JitHeader</Filter>
+    </ClInclude>
+    <ClInclude Include="corinfo.h">
+      <Filter>Header Files\JitHeader</Filter>
+    </ClInclude>
+    <ClInclude Include="net4headers.h">
+      <Filter>Header Files\JitHeader</Filter>
+    </ClInclude>
+    <ClInclude Include="cordebuginfo.h">
+      <Filter>Header Files\JitHeader</Filter>
+    </ClInclude>
+    <ClInclude Include="corjithost.h">
+      <Filter>Header Files\JitHeader</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

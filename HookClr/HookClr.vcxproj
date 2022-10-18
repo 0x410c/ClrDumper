@@ -89,10 +89,12 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalDependencies>libMinHook.x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -145,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="AssemblyLoadHook.cpp" />
     <ClCompile Include="DllLoadCallback.cpp" />
+    <ClCompile Include="PowershellHook.cpp" />
     <ClCompile Include="JScriptHook.cpp" />
     <ClCompile Include="kmp.cpp" />
     <ClCompile Include="MemoryUtils.cpp" />
@@ -156,7 +159,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblyLoadHook.h" />
+    <ClInclude Include="cordebuginfo.h" />
+    <ClInclude Include="corinfo.h" />
+    <ClInclude Include="corjit.h" />
+    <ClInclude Include="corjithost.h" />
     <ClInclude Include="DllLoadCallback.h" />
+    <ClInclude Include="net4headers.h" />
+    <ClInclude Include="PowershellHook.h" />
     <ClInclude Include="JScriptHook.h" />
     <ClInclude Include="kmp.h" />
     <ClInclude Include="MemoryUtils.h" />

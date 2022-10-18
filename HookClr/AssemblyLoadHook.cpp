@@ -1,7 +1,6 @@
 #include"AssemblyLoadHook.h"
 #include "NamedPipeIO.h"
 #include "utility.h"
-#include <Shlwapi.h>
 #include <stdio.h>
 
 
@@ -28,7 +27,7 @@ namespace AssemblyLoad {
     {
         char processPath[MAX_PATH];
         GetModuleFileNameA(NULL, processPath, MAX_PATH);
-        PathStripPathA(processPath);
+        IPathStripPathA(processPath);
 
         Log("[+] .Net Assembly Loaded in, Process : %s with, Size : %d bytes", processPath, length);
 

@@ -1,7 +1,6 @@
 #include "NativeClrHook.h"
 #include "NamedPipeIO.h"
 #include "utility.h"
-#include <Shlwapi.h>
 
 
 namespace NativeClr {
@@ -20,7 +19,7 @@ namespace NativeClr {
     {
         char processPath[MAX_PATH];
         GetModuleFileNameA(NULL, processPath, MAX_PATH);
-        PathStripPathA(processPath);
+        IPathStripPathA(processPath);
 
         Log("[+] .Net Assembly Loaded in, Process : %s with, Size : %d bytes", processPath, psa->rgsabound->cElements);
 
@@ -51,17 +50,20 @@ namespace NativeClr {
         return unaccess(psa);
     }
 
+    void* _safeArrayUnaccessData;
     void HookForNativeClr(char* dumpPath)
     {
         lstrcpyA(_dumpPath, dumpPath);
-        if (MH_CreateHook(&SafeArrayUnaccessData, &HookedUnAccess,
+        HMODULE addr = GetModuleHandleA("oleaut32.dll");
+        _safeArrayUnaccessData = GetProcAddress(addr, "SafeArrayUnaccessData");
+        if (MH_CreateHook(&_safeArrayUnaccessData, &HookedUnAccess,
             reinterpret_cast<LPVOID*>(&unaccess)) != MH_OK)
         {
             Log("[-] Cannot Create SafeArrayUnaccessData Hook!\n");
             return;
         }
         
-        if (MH_EnableHook(&SafeArrayUnaccessData) != MH_OK)
+        if (MH_EnableHook(&_safeArrayUnaccessData) != MH_OK)
         {
             Log("[-] Cannot enable SafeArrayUnaccessData Hook!\n");
             return;
@@ -72,7 +74,7 @@ namespace NativeClr {
     void UnhookForNativeClr()
     {
         Log("[-] Native Clr Hook Disabled!\n");
-        MH_DisableHook(&SafeArrayUnaccessData);
+        MH_DisableHook(&_safeArrayUnaccessData);
     }
 
 }

@@ -19,6 +19,7 @@ using namespace std;
 #define VBSCRIPT_ARG 3
 #define JSCRIPT_ARG 4
 #define RUNPE_ARG 5
+#define POWERSHELL_ARG 6
 
 HANDLE _reader_pipe;
 HANDLE _writer_pipe;
@@ -138,7 +139,7 @@ void main(int argc, char* argv[])
 	lstrcatA(dll,"\\HookClr.dll");
 	if (argc < 3)
 	{
-		printf("ClrDumper.exe [-nativeclr|-asmload|-vbscript|-jscript] [FULL_PATH_TO_EXE|FULL_PATH_TO_VBS|FULL_PATH_TO_JS]");
+		printf("ClrDumper.exe [-nativeclr|-asmload|-vbscript|-jscript|-powershell] [FULL_PATH_TO_EXE|FULL_PATH_TO_VBS|FULL_PATH_TO_JS|FULL_PATH_TO_PS]");
 		return;
 	}
 	lstrcpyA(pefile, argv[2]);
@@ -158,6 +159,10 @@ void main(int argc, char* argv[])
 	{
 		_intKeyMap[HOOK_TYPE] = JSCRIPT_ARG;
 	}
+	else if (lstrcmpA(argv[1], "-powershell") == 0)
+	{
+		_intKeyMap[HOOK_TYPE] = POWERSHELL_ARG;
+	}
 	else
 	{
 		printf("[-] Invalid arguments");
@@ -166,14 +171,23 @@ void main(int argc, char* argv[])
 
 	//if script is given then run with wscript.exe else, run the exec as it is
 	char* ext = CharLowerA(& pefile[lstrlenA(pefile) - 4]);
-	if ((_intKeyMap[HOOK_TYPE] == VBSCRIPT_ARG || _intKeyMap[HOOK_TYPE] == JSCRIPT_ARG) && lstrcmpA(ext,".exe"))
+	if ((_intKeyMap[HOOK_TYPE] == VBSCRIPT_ARG || _intKeyMap[HOOK_TYPE] == JSCRIPT_ARG || _intKeyMap[HOOK_TYPE] == POWERSHELL_ARG) && lstrcmpA(ext,".exe"))
 	{
 		isScript = true;
 		char buff[MAX_PATH];
 		GetSystemDirectoryA(buff, MAX_PATH);
-		lstrcatA(buff, "\\wscript.exe");
-		lstrcpyA(pefile, buff);
-		sprintf(script_path, "%s %s", pefile, argv[2]);
+		if (_intKeyMap[HOOK_TYPE] != POWERSHELL_ARG)
+		{
+			lstrcatA(buff, "\\wscript.exe");
+			lstrcpyA(pefile, buff);
+			sprintf(script_path, "%s %s", pefile, argv[2]);
+		}
+		else //powershell
+		{
+			lstrcatA(buff, "\\WindowsPowerShell\\v1.0\\powershell.exe");
+			lstrcpyA(pefile, buff);
+			sprintf(script_path, "%s -ExecutionPolicy bypass -File %s", pefile, argv[2]);
+		}
 	}
 
 	
@@ -183,8 +197,9 @@ void main(int argc, char* argv[])
 
 	//pass the current directory to the process, where the target exe is
 	char targetDir[256];
-	lstrcpyA(targetDir, pefile);
-	PathRemoveFileSpecA(targetDir);
+	GetCurrentDirectoryA(256, targetDir);
+	//lstrcpyA(targetDir, pefile);
+	//PathRemoveFileSpecA(targetDir);
 
 	//if we are dumping scripts the process needs path of the script
 	STARTUPINFOA si;
@@ -192,8 +207,10 @@ void main(int argc, char* argv[])
 	memset(&si, 0, sizeof(si));
 	memset(&pi, 0, sizeof(pi));
 	si.cb = sizeof(si);
+	
+	//fails when injectiong in powershell and console apps
 	STARTUPINFOEXA siex = { sizeof(siex) };
-
+	siex.StartupInfo = si;
 	SIZE_T cbAttributeListSize;
 	PPROC_THREAD_ATTRIBUTE_LIST pAttributeList = nullptr;
 	InitializeProcThreadAttributeList(NULL,1,NULL,&cbAttributeListSize);
@@ -209,8 +226,8 @@ void main(int argc, char* argv[])
 	UpdateProcThreadAttribute(pAttributeList, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &spoofProcessHandle, sizeof(HANDLE), NULL, NULL);
 	siex.lpAttributeList = pAttributeList;
 
-	if (CreateProcessA(pefile, isScript?script_path:NULL, NULL, NULL, FALSE, CREATE_SUSPENDED| EXTENDED_STARTUPINFO_PRESENT, NULL, targetDir, &siex.StartupInfo, &pi) == FALSE) {
-		printf("[-] Cant Create Process! Exiting!\n");
+	if (CreateProcessA(pefile, isScript?script_path:NULL, NULL, NULL, FALSE, CREATE_SUSPENDED| CREATE_NEW_CONSOLE | EXTENDED_STARTUPINFO_PRESENT, NULL, targetDir, &(siex.StartupInfo), &pi) == FALSE) {
+		printf("[-] Cant Create Process! Exiting! %d\n",GetLastError());
 		return;
 	}
 
@@ -247,9 +264,11 @@ void main(int argc, char* argv[])
 		unsigned char* loadLib, * kernel32;
 		kernel32 = (unsigned char*)GetModuleHandleA("kernel32.dll");
 		loadLib = (unsigned char*)GetProcAddress((HMODULE)kernel32, "LoadLibraryA");
-
 		HANDLE threadHandle = CreateRemoteThread(pi.hProcess, 0, 0, (LPTHREAD_START_ROUTINE)loadLib, lpAddress, 0, 0);
 		
+
+		if (!threadHandle)
+			printf("[-] Error Creating remote thread : %d", GetLastError());
 		WaitForConnection();
 		
 		HANDLE hThread = CreateThread(
@@ -269,6 +288,9 @@ void main(int argc, char* argv[])
 		
 		if (WaitForSingleObjectEx(threadHandle, 60000, 0) == WAIT_TIMEOUT)
 			printf("[-] Remote thread timed out!\n");
+		DWORD ret;
+		GetExitCodeThread(threadHandle, &ret);
+		printf("[?] Thread returned : %x\n", ret);
 		ResumeThread(pi.hThread);
 		
 		WaitForSingleObject(hThread, INFINITE);

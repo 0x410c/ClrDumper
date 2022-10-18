@@ -39,7 +39,7 @@ namespace VBScript {
 			DWORD dwBytesRead;
 			int size = wcslen((const wchar_t*)b);
 			char* buffer = (char*)malloc(size+1);
-			wsprintfA(buffer,"%ls", b);
+			sprintf(buffer,"%S", b);
 			WriteFile(hFile, buffer, size, &dwBytesRead, NULL);
 			CloseHandle(hFile);
 			Log("[+] Dump written to %s", path);

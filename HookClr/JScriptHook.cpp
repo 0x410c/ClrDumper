@@ -40,7 +40,7 @@ namespace JScript {
 			DWORD dwBytesRead;
 			int size = wcslen((const wchar_t*)c);
 			char* buffer = (char*)malloc(size + 1);
-			wsprintfA(buffer, "%ls", c);
+			sprintf(buffer, "%S", c);
 			WriteFile(hFile, buffer, size, &dwBytesRead, NULL);
 			CloseHandle(hFile);
 			Log("[+] Dump written to %s", path);

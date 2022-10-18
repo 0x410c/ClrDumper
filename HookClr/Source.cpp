@@ -5,9 +5,10 @@
 #include "NamedPipeIO.h"
 #include "VBScript.h"
 #include "JScriptHook.h"
+#include "PowershellHook.h"
 
 
-#pragma comment(lib,"Shlwapi.lib")
+
 
 #define FILE_MAPPING_NAME "Dumper_Arg"
 #define FILE_MAPPING_SIZE 256
@@ -17,6 +18,7 @@
 #define VBSCRIPT_ARG 3
 #define JSCRIPT_ARG 4
 #define RUNPE_ARG 5
+#define POWERSHELL_ARG 6
 
 int _hookType=-1;
 
@@ -44,8 +46,7 @@ BOOL WINAPI DllMain(
        
         break;
 
-    case DLL_PROCESS_DETACH:
-        
+    case DLL_PROCESS_DETACH: 
         UnhookFunctions();
         DeInitNamedPipe();
         break;
@@ -70,6 +71,9 @@ void UnhookFunctions()
     case JSCRIPT_ARG:
         JScript::UnhookForJScript();
         break;
+    case POWERSHELL_ARG:
+        powershell::UnhookPowershell();
+        break;
     default:
         break;
     }
@@ -78,6 +82,7 @@ void UnhookFunctions()
 
 void HookFunctions()
 {
+    
     //get argument set in file mapping
     char dumpPath[MAX_PATH];
     GetString(DUMP_PATH, dumpPath, MAX_PATH);
@@ -106,6 +111,10 @@ void HookFunctions()
     case JSCRIPT_ARG:
         Log("[+] Hooking for JScript!");
         JScript::HookForJScript(dumpPath);
+        break;
+    case POWERSHELL_ARG:
+        Log("[+] Hooking for Powershell!");
+        powershell::HookPowershell(dumpPath);
         break;
     default:
         break;
